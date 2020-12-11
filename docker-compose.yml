@@ -1,0 +1,45 @@
+# @see https://kafka.js.org/docs/running-kafka-in-development
+# @see https://github.com/wurstmeister/kafka-docker
+version: "3.9"
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka:2.11-1.1.1
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://${HOST_IP}:9093
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  nestjs-consumer:
+    build: consumer
+    environment:
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=9092
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - kafka
+  nestjs-producer:
+    build: producer
+    ports:
+      - "8081:80"
+    environment:
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=9092
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - kafka
