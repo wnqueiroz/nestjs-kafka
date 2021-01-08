@@ -14,6 +14,6 @@ export class AppController {
 
     return {
       producerMessage,
-    };   
+    };
   }
 }
